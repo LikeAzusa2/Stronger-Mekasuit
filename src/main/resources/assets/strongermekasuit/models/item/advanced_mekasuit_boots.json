@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "strongermekasuit:item/advanced_mekasuit_boots",
+    "layer1": "strongermekasuit:item/advanced_mekasuit_boots_tint_layer"
+  }
+}

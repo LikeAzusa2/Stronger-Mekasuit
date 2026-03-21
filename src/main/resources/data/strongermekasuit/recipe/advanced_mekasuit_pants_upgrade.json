@@ -1,0 +1,17 @@
+{
+  "type": "strongermekasuit:advanced_mekasuit_upgrade",
+  "chemical_input": {
+    "amount": 10000,
+    "chemical": "mekanism:antimatter"
+  },
+  "duration": 200,
+  "item_input": {
+    "count": 1,
+    "item": "mekanism:mekasuit_pants"
+  },
+  "output": {
+    "count": 1,
+    "id": "strongermekasuit:advanced_mekasuit_pants"
+  },
+  "per_tick_usage": false
+}

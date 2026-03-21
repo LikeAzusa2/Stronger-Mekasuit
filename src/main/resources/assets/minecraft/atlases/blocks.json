@@ -1,0 +1,8 @@
+{
+  "sources": [
+    {
+      "type": "minecraft:single",
+      "resource": "strongermekasuit:entity/armor/advanced_mekasuit_elytra"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "strongermekasuit:advanced_mekasuit_helmet",
+    "strongermekasuit:advanced_mekasuit_bodyarmor",
+    "strongermekasuit:advanced_mekasuit_pants",
+    "strongermekasuit:advanced_mekasuit_boots"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "strongermekasuit:item/advanced_mekasuit_bodyarmor",
+    "layer1": "strongermekasuit:item/advanced_mekasuit_bodyarmor_tint_layer",
+    "layer2": "strongermekasuit:item/advanced_mekasuit_bodyarmor_chest_bars"
+  }
+}

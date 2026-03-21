@@ -1,0 +1,55 @@
+{
+  "values": {
+    "#mekanism:mekasuit_always_supported": {
+      "absorption": 1.0
+    },
+    "minecraft:sonic_boom": {
+      "absorption": 0.75
+    },
+    "minecraft:mob_attack": {
+      "absorption": 1.0
+    },
+    "minecraft:mob_attack_no_aggro": {
+      "absorption": 1.0
+    },
+    "minecraft:player_attack": {
+      "absorption": 1.0
+    },
+    "minecraft:arrow": {
+      "absorption": 1.0
+    },
+    "minecraft:trident": {
+      "absorption": 1.0
+    },
+    "minecraft:mob_projectile": {
+      "absorption": 1.0
+    },
+    "minecraft:thrown": {
+      "absorption": 1.0
+    },
+    "minecraft:fireball": {
+      "absorption": 1.0
+    },
+    "minecraft:unattributed_fireball": {
+      "absorption": 1.0
+    },
+    "minecraft:wither_skull": {
+      "absorption": 1.0
+    },
+    "minecraft:sting": {
+      "absorption": 1.0
+    },
+    "minecraft:explosion": {
+      "absorption": 1.0
+    },
+    "minecraft:player_explosion": {
+      "absorption": 1.0
+    },
+    "minecraft:fireworks": {
+      "absorption": 1.0
+    },
+    "minecraft:mace_smash": {
+      "absorption": 1.0
+    }
+  }
+}

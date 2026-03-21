@@ -1,0 +1,16 @@
+{
+  "required": false,
+  "package": "com.likeazusa2.strongermekasuit.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ModuleHelperMixin",
+    "ItemMekaSuitArmorAbsorptionMixin",
+    "LivingEntityAdvancedMekaSuitDamageMixin",
+    "MekaSuitArmorTransparentLayerMixin"
+  ],
+  "client": [
+    "ClientGameRendererMixin",
+    "ClientGuiMixin"
+  ],
+  "server": []
+}
