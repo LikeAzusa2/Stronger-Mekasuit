@@ -24,7 +24,7 @@ public class ItemMekaSuitArmorAbsorptionMixin {
     private static boolean strongermekasuit$allowTechnicalDamageForAdvancedSuit(DamageSource source, TagKey<DamageType> tag, Player player,
           DamageSource originalSource, float amount) {
         if (shouldExpandOfficialAbsorption(player, source)) {
-            // 对高级套装放开 official technical 早退，让更多伤害先进入官方耗电挡伤链路。
+            // 对高级套装放开 official technical 早退，让更多伤害先进入官方耗能挡伤链路。
             return false;
         }
         return source.is(tag);
@@ -41,7 +41,7 @@ public class ItemMekaSuitArmorAbsorptionMixin {
     private static boolean strongermekasuit$allowBypassDamageForAdvancedSuit(DamageSource source, TagKey<DamageType> tag, Player player,
           DamageSource originalSource, float amount) {
         if (shouldExpandOfficialAbsorption(player, source)) {
-            // 对高级套装放开 official bypass early-exit，让绕甲/虚空等也先接入官方挡伤。
+            // 对高级套装放开 official bypass early-exit，让绕甲等伤害也先接入官方挡伤。
             return false;
         }
         return source.is(tag);
@@ -58,3 +58,4 @@ public class ItemMekaSuitArmorAbsorptionMixin {
         return true;
     }
 }
+

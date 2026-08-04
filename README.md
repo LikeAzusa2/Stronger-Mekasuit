@@ -1,6 +1,6 @@
 # Stronger Mekasuit
 
-`Stronger Mekasuit` is a NeoForge mod for Minecraft `1.21.1` that adds an advanced MekaSuit set on top of Mekanism.
+`Stronger Mekasuit` is a Forge mod for Minecraft `1.20.1` that adds an advanced MekaSuit set on top of Mekanism.
 
 The mod keeps Mekanism's module workflow and rendering style, while providing stronger armor values, expanded energy-based damage handling, and a custom upgrade path from the vanilla MekaSuit set.
 
@@ -17,9 +17,9 @@ The mod keeps Mekanism's module workflow and rendering style, while providing st
 
 ## Requirements
 
-- Minecraft `1.21.1`
-- NeoForge `21.1.206` or compatible `21.1.x`
-- Mekanism `10.7.18+`
+- Minecraft `1.20.1`
+- Forge `47.4.18` or compatible `47.x`
+- Mekanism `10.4.16+`
 
 ## Development
 
@@ -50,7 +50,7 @@ On Windows:
 ## Credits
 
 - Mekanism for the original MekaSuit system, module framework, and the upstream assets that this mod integrates with.
-- NeoForge for the modding platform and runtime.
+- Forge for the modding platform and runtime.
 - See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for modified third-party asset notices.
 
 ## License

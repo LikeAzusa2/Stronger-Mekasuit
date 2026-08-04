@@ -3,6 +3,7 @@ package com.likeazusa2.strongermekasuit.client.advanced;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,11 +23,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.neoforged.neoforge.client.model.data.ModelData;
-import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
+import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.client.model.geometry.IGeometryBakingContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+@SuppressWarnings("deprecation")
 public final class AdvancedMekaSuitModelOverlayRenderer {
 
     private static final QuadTransformation BASE_TRANSFORM = QuadTransformation.list(
@@ -34,12 +36,10 @@ public final class AdvancedMekaSuitModelOverlayRenderer {
           QuadTransformation.translate(-1, 0.5F, 0)
     );
     private static final RandomSource RANDOM = RandomSource.create(0);
-
     private static final float PURPLE_R = 0.75F;
     private static final float PURPLE_G = 0.28F;
     private static final float PURPLE_B = 1.0F;
 
-    // 常亮的紫色点位，覆盖头盔/手臂/腿/靴子上原本偏蓝偏绿的小灯点。
     private static final Map<OverlayModelPos, Set<String>> HEAD_SOLID_PARTS = Map.of(
           OverlayModelPos.HEAD, Set.of(
                 "helmet_head_led1",
@@ -71,15 +71,24 @@ public final class AdvancedMekaSuitModelOverlayRenderer {
                 "boots_right_leg_plate3"
           )
     );
-
-    // 胸甲中间两条竖直发光板，做成若隐若现。
     private static final Map<OverlayModelPos, Set<String>> CHEST_PULSE_PARTS = Map.of(
           OverlayModelPos.BODY, Set.of("chest_body_plate4", "chest_body_plate5")
     );
-
-    private static final Map<OverlayKey, List<BakedQuad>> QUAD_CACHE = new java.util.HashMap<>();
+    private static final Map<OverlayKey, List<BakedQuad>> QUAD_CACHE = new HashMap<>();
 
     private AdvancedMekaSuitModelOverlayRenderer() {
+    }
+
+    public static int getCachedOverlayGroupCount() {
+        return QUAD_CACHE.size();
+    }
+
+    public static int getCachedOverlayQuadCount() {
+        int total = 0;
+        for (List<BakedQuad> quads : QUAD_CACHE.values()) {
+            total += quads.size();
+        }
+        return total;
     }
 
     public static void renderFrontOverlay(EquipmentSlot slot, HumanoidModel<? extends LivingEntity> baseModel, PoseStack matrix,
@@ -144,7 +153,6 @@ public final class AdvancedMekaSuitModelOverlayRenderer {
     private static float getPulseAlpha() {
         double t = (System.currentTimeMillis() % 2600L) / 2600D;
         double wave = (Math.sin(t * Math.PI * 2D) + 1D) * 0.5D;
-        // 保持“若隐若现”，而不是一闪一灭。
         return (float) (0.30D + wave * 0.45D);
     }
 
@@ -189,9 +197,8 @@ public final class AdvancedMekaSuitModelOverlayRenderer {
             parts = parts.isEmpty() ? Collections.emptySet() : Set.copyOf(parts);
         }
 
-        @NotNull
         @Override
-        public String getModelName() {
+        public @NotNull String getModelName() {
             return "strongermekasuit:advanced_mekasuit_overlay";
         }
 
@@ -200,9 +207,8 @@ public final class AdvancedMekaSuitModelOverlayRenderer {
             return false;
         }
 
-        @NotNull
         @Override
-        public Material getMaterial(@NotNull String name) {
+        public @NotNull Material getMaterial(@NotNull String name) {
             return NO_MATERIAL;
         }
 
@@ -221,22 +227,19 @@ public final class AdvancedMekaSuitModelOverlayRenderer {
             return true;
         }
 
-        @NotNull
         @Override
         @Deprecated
-        public ItemTransforms getTransforms() {
+        public @NotNull ItemTransforms getTransforms() {
             return ItemTransforms.NO_TRANSFORMS;
         }
 
-        @NotNull
         @Override
-        public com.mojang.math.Transformation getRootTransform() {
+        public @NotNull com.mojang.math.Transformation getRootTransform() {
             return com.mojang.math.Transformation.identity();
         }
 
-        @Nullable
         @Override
-        public ResourceLocation getRenderTypeHint() {
+        public @Nullable ResourceLocation getRenderTypeHint() {
             return null;
         }
 

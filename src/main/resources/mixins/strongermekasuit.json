@@ -1,16 +1,23 @@
 {
   "required": false,
+  "minVersion": "0.8",
   "package": "com.likeazusa2.strongermekasuit.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "strongermekasuit.refmap.json",
   "mixins": [
     "ModuleHelperMixin",
-    "ItemMekaSuitArmorAbsorptionMixin",
     "LivingEntityAdvancedMekaSuitDamageMixin",
-    "MekaSuitArmorTransparentLayerMixin"
+    "MekaSuitArmorTransparentLayerMixin",
+    "ModuleChargeDistributionUnitMixin",
+    "PlayerStateAdvancedFlightMixin"
   ],
   "client": [
     "ClientGameRendererMixin",
-    "ClientGuiMixin"
+    "ClientGuiMixin",
+    "GuiModuleScrollListMixin",
+    "SoundHandlerAdvancedFlightMixin"
   ],
-  "server": []
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

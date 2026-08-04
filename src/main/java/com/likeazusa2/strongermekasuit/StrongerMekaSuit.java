@@ -5,50 +5,58 @@ import com.likeazusa2.strongermekasuit.advanced.AdvancedMekaSuitDamageHandler;
 import com.likeazusa2.strongermekasuit.advanced.AdvancedMekaSuitItem;
 import com.likeazusa2.strongermekasuit.advanced.AdvancedMekaSuitModuleInterop;
 import com.mojang.logging.LogUtils;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+import mekanism.api.energy.IEnergyContainer;
 import mekanism.api.gear.IModuleHelper;
+import mekanism.common.CommonPlayerTickHandler;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.registries.MekanismModules;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EquipmentSlotGroup;
+import mekanism.common.util.StorageUtils;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.NeoForgeMod;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
-import net.neoforged.neoforge.event.ItemAttributeModifierEvent;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.ItemAttributeModifierEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
-
 @Mod(StrongerMekaSuit.MODID)
 public class StrongerMekaSuit {
 
     public static final String MODID = "strongermekasuit";
     public static final Logger LOGGER = LogUtils.getLogger();
-    private static final ResourceLocation ADVANCED_GRAVITY_ID = ResourceLocation.fromNamespaceAndPath(MODID, "advanced_gravitational_modulation");
     private static final double ADVANCED_ARMOR_ATTRIBUTE_SCALE = 2.5D;
+    private static final long DEBUG_LOG_INTERVAL_TICKS = 100L;
 
-    public StrongerMekaSuit(IEventBus modBus, ModContainer modContainer) {
+    @SuppressWarnings("removal")
+    public StrongerMekaSuit() {
+        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         StrongerMekaSuitItems.ITEMS.register(modBus);
         StrongerMekaSuitRecipeSerializers.RECIPE_SERIALIZERS.register(modBus);
         AdvancedMekaSuitContainerHooks.register(modBus);
-        modContainer.registerConfig(ModConfig.Type.SERVER, StrongerMekaSuitConfig.SERVER_SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, StrongerMekaSuitConfig.SERVER_SPEC);
         modBus.addListener(AdvancedMekaSuitModuleInterop::enqueueIMC);
         modBus.addListener(StrongerMekaSuit::addCreativeTabItems);
-        NeoForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(this);
     }
 
     private static void addCreativeTabItems(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == net.minecraft.world.item.CreativeModeTabs.COMBAT) {
-            event.accept(StrongerMekaSuitItems.ADVANCED_MEKASUIT_HELMET);
-            event.accept(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BODYARMOR);
-            event.accept(StrongerMekaSuitItems.ADVANCED_MEKASUIT_PANTS);
-            event.accept(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BOOTS);
+        if (event.getTabKey() == CreativeModeTabs.COMBAT) {
+            event.accept(StrongerMekaSuitItems.ADVANCED_MEKASUIT_HELMET.get());
+            event.accept(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BODYARMOR.get());
+            event.accept(StrongerMekaSuitItems.ADVANCED_MEKASUIT_PANTS.get());
+            event.accept(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BOOTS.get());
         }
     }
 
@@ -58,51 +66,73 @@ public class StrongerMekaSuit {
         if (!(stack.getItem() instanceof AdvancedMekaSuitItem armor)) {
             return;
         }
+        if (event.getSlotType() != armor.getEquipmentSlot()) {
+            return;
+        }
 
-        // 先移除原版 MekaSuit 自带的基础属性，再补回高级套装的最终数值，避免 tooltip 重复叠词条。
-        event.removeAllModifiersFor(Attributes.ARMOR);
-        event.removeAllModifiersFor(Attributes.ARMOR_TOUGHNESS);
-        event.removeAllModifiersFor(Attributes.KNOCKBACK_RESISTANCE);
+        event.removeAttribute(Attributes.ARMOR);
+        event.removeAttribute(Attributes.ARMOR_TOUGHNESS);
+        event.removeAttribute(Attributes.KNOCKBACK_RESISTANCE);
 
-        EquipmentSlotGroup slotGroup = EquipmentSlotGroup.bySlot(armor.getType().getSlot());
+        EquipmentSlot slot = event.getSlotType();
         String slotName = armor.getType().getName();
-        // 每个部位都要使用独立的 modifier id，避免四件装备在属性重算时互相覆盖。
-        ResourceLocation armorModifierId = ResourceLocation.fromNamespaceAndPath(MODID, "advanced_armor_" + slotName);
-        ResourceLocation toughnessModifierId = ResourceLocation.fromNamespaceAndPath(MODID, "advanced_toughness_" + slotName);
-        ResourceLocation knockbackModifierId = ResourceLocation.fromNamespaceAndPath(MODID, "advanced_knockback_" + slotName);
         double scaledArmor = armor.getDefense() * ADVANCED_ARMOR_ATTRIBUTE_SCALE;
         double scaledToughness = armor.getToughness() * ADVANCED_ARMOR_ATTRIBUTE_SCALE;
         double scaledKnockbackResistance = 0.1D * ADVANCED_ARMOR_ATTRIBUTE_SCALE;
 
-        event.addModifier(Attributes.ARMOR, new AttributeModifier(armorModifierId, scaledArmor, AttributeModifier.Operation.ADD_VALUE), slotGroup);
-        event.addModifier(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(toughnessModifierId, scaledToughness, AttributeModifier.Operation.ADD_VALUE), slotGroup);
+        event.addModifier(Attributes.ARMOR,
+              new AttributeModifier(stableModifierId("armor", slotName), "advanced_armor_" + slotName,
+                    scaledArmor, AttributeModifier.Operation.ADDITION));
+        event.addModifier(Attributes.ARMOR_TOUGHNESS,
+              new AttributeModifier(stableModifierId("toughness", slotName), "advanced_toughness_" + slotName,
+                    scaledToughness, AttributeModifier.Operation.ADDITION));
         event.addModifier(Attributes.KNOCKBACK_RESISTANCE,
-              new AttributeModifier(knockbackModifierId, scaledKnockbackResistance, AttributeModifier.Operation.ADD_VALUE), slotGroup);
+              new AttributeModifier(stableModifierId("knockback", slotName), "advanced_knockback_" + slotName,
+                    scaledKnockbackResistance,
+                    AttributeModifier.Operation.ADDITION));
+    }
 
-        if (stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BODYARMOR)
-              && IModuleHelper.INSTANCE.isEnabled(stack, MekanismModules.GRAVITATIONAL_MODULATING_UNIT)
-              && IModuleHelper.INSTANCE.getIfEnabled(stack, MekanismModules.GRAVITATIONAL_MODULATING_UNIT)
-                    .hasEnoughEnergy(stack, MekanismConfig.gear.mekaSuitEnergyUsageGravitationalModulation)) {
-            // 官方重力模块内部只认原版胸甲，这里补一个等价飞行属性给高级胸甲。
-            event.addModifier(NeoForgeMod.CREATIVE_FLIGHT,
-                  new AttributeModifier(ADVANCED_GRAVITY_ID, 1, AttributeModifier.Operation.ADD_VALUE),
-                  EquipmentSlotGroup.CHEST);
-        }
+    /**
+     * ItemAttributeModifierEvent is evaluated again whenever an equipped stack's NBT changes. The UUID must
+     * therefore be stable across every evaluation so LivingEntity can remove the previous modifier instance.
+     */
+    private static UUID stableModifierId(String attribute, String slotName) {
+        return UUID.nameUUIDFromBytes((MODID + ":advanced_" + attribute + ":" + slotName).getBytes(StandardCharsets.UTF_8));
     }
 
     @SubscribeEvent
-    public void clampAdvancedMekaSuitIncomingDamage(LivingIncomingDamageEvent event) {
-        if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)) {
+    public void logAdvancedFlightState(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
             return;
         }
-        if (!AdvancedMekaSuitDamageHandler.shouldApplyEnergyAbsorption(player, event.getSource())) {
+        if (AdvancedMekaSuitDamageHandler.getAdvancedPieceCount(player) <= 0 || player.getAbilities().instabuild || !player.getAbilities().flying) {
+            return;
+        }
+        if (player.level().getGameTime() % DEBUG_LOG_INTERVAL_TICKS != 0) {
             return;
         }
 
-        float clampedDamage = AdvancedMekaSuitDamageHandler.clampAbnormalDamage(event.getAmount());
-        if (clampedDamage < event.getAmount()) {
-            // 在 NeoForge 的伤害容器层先把异常高伤压到上限，后面的原版减伤和耗电挡伤都基于这个结果继续计算。
-            event.setAmount(clampedDamage);
-        }
+        ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
+        IEnergyContainer energyContainer = StorageUtils.getEnergyContainer(chestStack, 0);
+        // Server-side samples help distinguish integrated-server tick stalls from client-only rendering stalls.
+        LOGGER.info(
+              "[SMS debug][server] t={} flying={} mayfly={} gravReady={} pos=({},{},{}) delta=({},{},{}) chestEnergy={}",
+              player.level().getGameTime(),
+              player.getAbilities().flying,
+              player.getAbilities().mayfly,
+              CommonPlayerTickHandler.isGravitationalModulationReady(player),
+              format(player.getX()),
+              format(player.getY()),
+              format(player.getZ()),
+              format(player.getDeltaMovement().x),
+              format(player.getDeltaMovement().y),
+              format(player.getDeltaMovement().z),
+              energyContainer == null ? "none" : energyContainer.getEnergy() + "/" + energyContainer.getMaxEnergy()
+        );
+    }
+
+    private static String format(double value) {
+        return String.format(java.util.Locale.ROOT, "%.3f", value);
     }
 }
+

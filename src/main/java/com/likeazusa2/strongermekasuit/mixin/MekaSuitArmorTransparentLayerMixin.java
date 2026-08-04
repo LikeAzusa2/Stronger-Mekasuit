@@ -126,10 +126,10 @@ public abstract class MekaSuitArmorTransparentLayerMixin {
     }
 
     private static boolean isAdvancedPiece(ItemStack stack) {
-        return stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_HELMET)
-              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BODYARMOR)
-              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_PANTS)
-              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BOOTS);
+        return stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_HELMET.get())
+              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BODYARMOR.get())
+              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_PANTS.get())
+              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BOOTS.get());
     }
 
     private static Set<?> filterModuleModels(Set<?> models) {
@@ -168,3 +168,4 @@ public abstract class MekaSuitArmorTransparentLayerMixin {
         return Color.rgbad(r, g, b, a);
     }
 }
+

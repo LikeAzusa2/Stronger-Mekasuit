@@ -11,7 +11,7 @@
   },
   "output": {
     "count": 1,
-    "id": "strongermekasuit:advanced_mekasuit_boots"
+    "item": "strongermekasuit:advanced_mekasuit_boots"
   },
   "per_tick_usage": false
 }

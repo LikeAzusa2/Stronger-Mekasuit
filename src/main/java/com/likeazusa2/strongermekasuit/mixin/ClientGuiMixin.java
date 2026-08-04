@@ -36,7 +36,7 @@ public abstract class ClientGuiMixin {
         }
 
         int health = (int) Math.ceil(player.getHealth());
-        // 受击闪烁和血条抖动主要依赖这些缓存值，这里直接把它们收敛到当前血量。
+        // Damage blink and shake are driven by these caches; keep them synchronized with real health.
         lastHealth = health;
         displayHealth = health;
         lastHealthTime = 0L;

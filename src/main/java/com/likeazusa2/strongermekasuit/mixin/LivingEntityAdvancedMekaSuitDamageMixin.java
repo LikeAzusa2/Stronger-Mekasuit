@@ -91,15 +91,17 @@ public abstract class LivingEntityAdvancedMekaSuitDamageMixin {
         }
 
         float currentHealth = self.getHealth();
-        float incomingDamage = currentHealth - newHealth;
-        if (incomingDamage <= 0 || !AdvancedMekaSuitDamageHandler.shouldApplyEnergyAbsorption(player, source)) {
+        float originalIncomingDamage = currentHealth - newHealth;
+        if (originalIncomingDamage <= 0 || !AdvancedMekaSuitDamageHandler.shouldApplyEnergyAbsorption(player, source)) {
             strongermekasuit$setHealthDirectly(self, newHealth);
             return;
         }
 
+        float incomingDamage = AdvancedMekaSuitDamageHandler.clampAbnormalDamage(player, originalIncomingDamage);
+
         float absorbedRatio = AdvancedMekaSuitDamageHandler.absorbRemainingDamage(player, source, incomingDamage);
         if (absorbedRatio <= 0) {
-            strongermekasuit$setHealthDirectly(self, newHealth);
+            strongermekasuit$setHealthDirectly(self, currentHealth - incomingDamage);
             return;
         }
 
@@ -136,7 +138,7 @@ public abstract class LivingEntityAdvancedMekaSuitDamageMixin {
         float originalIncomingDamage = currentHealth - newHealth;
         float incomingDamage = originalIncomingDamage;
         if (!strongermekasuit$enteredMainDamageEntry) {
-            incomingDamage = AdvancedMekaSuitDamageHandler.clampAbnormalDamage(incomingDamage);
+            incomingDamage = AdvancedMekaSuitDamageHandler.clampAbnormalDamage(player, incomingDamage);
         }
 
         float absorbedRatio = AdvancedMekaSuitDamageHandler.absorbRemainingDamage(player, source, incomingDamage);
@@ -217,3 +219,4 @@ public abstract class LivingEntityAdvancedMekaSuitDamageMixin {
         hurtDuration = 0;
     }
 }
+

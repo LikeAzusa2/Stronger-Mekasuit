@@ -11,7 +11,7 @@
   },
   "output": {
     "count": 1,
-    "id": "strongermekasuit:advanced_mekasuit_bodyarmor"
+    "item": "strongermekasuit:advanced_mekasuit_bodyarmor"
   },
   "per_tick_usage": false
 }
