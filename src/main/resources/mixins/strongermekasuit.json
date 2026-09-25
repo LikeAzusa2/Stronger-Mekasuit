@@ -8,8 +8,7 @@
     "ModuleHelperMixin",
     "LivingEntityAdvancedMekaSuitDamageMixin",
     "MekaSuitArmorTransparentLayerMixin",
-    "ModuleChargeDistributionUnitMixin",
-    "PlayerStateAdvancedFlightMixin"
+    "ModuleChargeDistributionUnitMixin"
   ],
   "client": [
     "ClientGameRendererMixin",
