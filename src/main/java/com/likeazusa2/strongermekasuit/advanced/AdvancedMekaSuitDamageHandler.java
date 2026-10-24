@@ -8,9 +8,8 @@ import java.util.List;
 import mekanism.api.Action;
 import mekanism.api.AutomationType;
 import mekanism.api.energy.IEnergyContainer;
-import mekanism.api.gear.IModuleHelper;
 import mekanism.api.gear.IModule;
-import mekanism.api.math.MathUtils;
+import mekanism.api.gear.IModuleHelper;
 import mekanism.api.math.FloatingLong;
 import mekanism.common.config.MekanismConfig;
 import mekanism.common.registries.MekanismModules;
@@ -28,27 +27,32 @@ public final class AdvancedMekaSuitDamageHandler {
     }
 
     public static float clampAbnormalDamage(Player player, float amount) {
-        if (amount <= 0) {
+        if (!(amount > 0)) {
             return 0;
         }
+        if (!Float.isFinite(amount)) {
+            amount = Float.MAX_VALUE;
+        }
         FloatingLong damageEnergyCost = MekanismConfig.gear.mekaSuitEnergyUsageDamage.get();
-        if (damageEnergyCost.isZero()) {
+        double damageEnergyCostValue = damageEnergyCost.doubleValue();
+        if (!(damageEnergyCostValue > 0) || !Double.isFinite(damageEnergyCostValue)) {
             return amount;
         }
 
-        double clampedDamage = Math.min(amount, StrongerMekaSuitConfig.SERVER.abnormalDamageClampEnergy() / damageEnergyCost.doubleValue());
+        double clampedDamage = Math.min(amount,
+              StrongerMekaSuitConfig.SERVER.abnormalDamageClampEnergy() / damageEnergyCostValue);
         double absorbableDamage = getFullyAbsorbableDamage(player, damageEnergyCost);
         if (absorbableDamage > 0) {
             clampedDamage = Math.min(clampedDamage, absorbableDamage);
         }
-        return (float) clampedDamage;
-    }
-
-    public static float clampAbnormalDamage(float amount) {
-        return clampAbnormalDamage(null, amount);
+        return Float.isFinite((float) clampedDamage) ? Math.max(0, (float) clampedDamage) : amount;
     }
 
     private static double getFullyAbsorbableDamage(Player player, FloatingLong damageEnergyCost) {
+        if (damageEnergyCost == null || !(damageEnergyCost.doubleValue() > 0)
+              || !Double.isFinite(damageEnergyCost.doubleValue())) {
+            return 0;
+        }
         List<FoundArmorDetails> armorDetails = getAdvancedArmorDetails(player);
         if (armorDetails.isEmpty()) {
             return 0;
@@ -88,16 +92,23 @@ public final class AdvancedMekaSuitDamageHandler {
     }
 
     public static float absorbRemainingDamage(Player player, DamageSource source, float amount) {
-        if (amount <= 0 || !shouldApplyEnergyAbsorption(player, source)) {
+        if (!Float.isFinite(amount)) {
+            amount = clampAbnormalDamage(player, amount);
+        }
+        if (!(amount > 0) || !shouldApplyEnergyAbsorption(player, source)) {
             return 0;
         }
 
         float ratioAbsorbed = 0;
         List<FoundArmorDetails> armorDetails = getAdvancedArmorDetails(player);
+        FloatingLong energyCost = MekanismConfig.gear.mekaSuitEnergyUsageDamage.get();
+        if (energyCost == null || energyCost.doubleValue() < 0 || !Double.isFinite(energyCost.doubleValue())) {
+            return 0;
+        }
 
         for (FoundArmorDetails details : armorDetails) {
             float absorption = details.armor.getOfficialAbsorption();
-            ratioAbsorbed += absorbDamage(details.usageInfo, amount, absorption, ratioAbsorbed, MekanismConfig.gear.mekaSuitEnergyUsageDamage.get());
+            ratioAbsorbed += absorbDamage(details.usageInfo, amount, absorption, ratioAbsorbed, energyCost);
             if (ratioAbsorbed >= 1) {
                 break;
             }
@@ -123,7 +134,7 @@ public final class AdvancedMekaSuitDamageHandler {
     }
 
     private static float absorbDamage(EnergyUsageInfo usageInfo, float amount, float absorption, float currentAbsorbed, FloatingLong energyCost) {
-        absorption = Math.min(1 - currentAbsorbed, absorption);
+        absorption = Math.min(Math.max(0, 1 - currentAbsorbed), Math.max(0, absorption));
         float toAbsorb = amount * absorption;
         if (toAbsorb > 0) {
             FloatingLong usage = energyCost.multiply(toAbsorb).ceil();
@@ -146,38 +157,37 @@ public final class AdvancedMekaSuitDamageHandler {
     }
 
     public static boolean isAdvancedMekaSuitPiece(ItemStack stack) {
-        return stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_HELMET.get())
-              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BODYARMOR.get())
-              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_PANTS.get())
-              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BOOTS.get());
+        return StrongerMekaSuitItems.isAdvancedPiece(stack);
     }
 
     public static int getAdvancedPieceCount(Player player) {
+        if (player == null) {
+            return 0;
+        }
         int pieces = 0;
-        if (player.getItemBySlot(EquipmentSlot.HEAD).is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_HELMET.get())) {
+        if (isAdvancedMekaSuitPiece(player.getItemBySlot(EquipmentSlot.HEAD))) {
             pieces++;
         }
-        if (player.getItemBySlot(EquipmentSlot.CHEST).is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BODYARMOR.get())) {
+        if (isAdvancedMekaSuitPiece(player.getItemBySlot(EquipmentSlot.CHEST))) {
             pieces++;
         }
-        if (player.getItemBySlot(EquipmentSlot.LEGS).is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_PANTS.get())) {
+        if (isAdvancedMekaSuitPiece(player.getItemBySlot(EquipmentSlot.LEGS))) {
             pieces++;
         }
-        if (player.getItemBySlot(EquipmentSlot.FEET).is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BOOTS.get())) {
+        if (isAdvancedMekaSuitPiece(player.getItemBySlot(EquipmentSlot.FEET))) {
             pieces++;
         }
         return pieces;
     }
 
-    public static boolean isFullSet(Player player) {
-        return getAdvancedPieceCount(player) == 4;
-    }
-
     public static boolean requiresInhalationModule(DamageSource source) {
-        return source.is(MekanismTags.DamageTypes.IS_PREVENTABLE_MAGIC);
+        return source != null && source.is(MekanismTags.DamageTypes.IS_PREVENTABLE_MAGIC);
     }
 
     public static boolean hasEnabledInhalationModule(Player player) {
+        if (player == null) {
+            return false;
+        }
         ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
         IModule<?> module = isAdvancedMekaSuitPiece(helmet) ? IModuleHelper.INSTANCE.load(helmet, MekanismModules.INHALATION_PURIFICATION_UNIT) : null;
         return module != null && module.isEnabled();

@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = SoundHandler.class, remap = false)
 public abstract class SoundHandlerAdvancedFlightMixin {
 
-    @Inject(method = "startSound", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "startSound", at = @At("HEAD"), cancellable = true, require = 0)
     private static void strongermekasuit$skipAdvancedGravityFlightSound(LevelAccessor world, UUID uuid, SoundType soundType, CallbackInfo ci) {
         if (soundType != SoundType.GRAVITATIONAL_MODULATOR) {
             return;

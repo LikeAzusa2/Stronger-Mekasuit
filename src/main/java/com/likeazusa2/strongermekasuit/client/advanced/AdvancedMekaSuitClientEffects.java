@@ -39,7 +39,7 @@ public final class AdvancedMekaSuitClientEffects {
             ItemStack chestStack = player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST);
             IEnergyContainer energyContainer = StorageUtils.getEnergyContainer(chestStack, 0);
             // This log is intentionally compact and periodic so we can compare hover state growth on the client.
-            StrongerMekaSuit.LOGGER.info(
+            StrongerMekaSuit.LOGGER.debug(
                   "[SMS debug][client] t={} flying={} mayfly={} creative={} gravReady={} gravOn={} pos=({},{},{}) delta=({},{},{}) chestEnergy={} overlayGroups={} overlayQuads={}",
                   player.level().getGameTime(),
                   player.getAbilities().flying,

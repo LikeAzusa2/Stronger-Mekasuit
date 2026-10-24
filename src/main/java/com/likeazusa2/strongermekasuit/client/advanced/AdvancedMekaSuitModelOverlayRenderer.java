@@ -1,12 +1,13 @@
 package com.likeazusa2.strongermekasuit.client.advanced;
 
+import com.likeazusa2.strongermekasuit.StrongerMekaSuit;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import mekanism.client.model.BaseModelCache;
 import mekanism.client.model.MekanismModelCache;
 import mekanism.client.render.lib.QuadTransformation;
@@ -23,19 +24,23 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.client.model.geometry.IGeometryBakingContext;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("deprecation")
+@Mod.EventBusSubscriber(modid = StrongerMekaSuit.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class AdvancedMekaSuitModelOverlayRenderer {
 
     private static final QuadTransformation BASE_TRANSFORM = QuadTransformation.list(
           QuadTransformation.rotate(0, 0, 180),
           QuadTransformation.translate(-1, 0.5F, 0)
     );
-    private static final RandomSource RANDOM = RandomSource.create(0);
     private static final float PURPLE_R = 0.75F;
     private static final float PURPLE_G = 0.28F;
     private static final float PURPLE_B = 1.0F;
@@ -74,9 +79,15 @@ public final class AdvancedMekaSuitModelOverlayRenderer {
     private static final Map<OverlayModelPos, Set<String>> CHEST_PULSE_PARTS = Map.of(
           OverlayModelPos.BODY, Set.of("chest_body_plate4", "chest_body_plate5")
     );
-    private static final Map<OverlayKey, List<BakedQuad>> QUAD_CACHE = new HashMap<>();
+    private static final Map<OverlayKey, List<BakedQuad>> QUAD_CACHE = new ConcurrentHashMap<>();
 
     private AdvancedMekaSuitModelOverlayRenderer() {
+    }
+
+    @SubscribeEvent
+    public static void onModelBakingCompleted(ModelEvent.BakingCompleted event) {
+        // Models are re-baked on resource reload; drop quads baked from the old OBJ data.
+        QUAD_CACHE.clear();
     }
 
     public static int getCachedOverlayGroupCount() {
@@ -138,7 +149,8 @@ public final class AdvancedMekaSuitModelOverlayRenderer {
             return cached;
         }
         BaseModelCache.OBJModelData model = MekanismModelCache.INSTANCE.MEKASUIT;
-        List<BakedQuad> raw = model.bake(new OverlayModelConfiguration(parts)).getQuads(null, null, RANDOM, ModelData.EMPTY, null);
+        // A fresh seeded source keeps OBJ baking deterministic without sharing mutable state across renders.
+        List<BakedQuad> raw = model.bake(new OverlayModelConfiguration(parts)).getQuads(null, null, RandomSource.create(0), ModelData.EMPTY, null);
         List<BakedQuad> transformed = raw.isEmpty() ? Collections.emptyList() : QuadUtils.transformBakedQuads(raw, pos.transform());
         QUAD_CACHE.put(key, transformed);
         return transformed;

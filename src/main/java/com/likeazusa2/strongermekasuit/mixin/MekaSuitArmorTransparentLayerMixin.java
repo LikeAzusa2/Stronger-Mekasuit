@@ -19,10 +19,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// remap stays off: every selector here names only Mekanism-owned methods, fields and types, which never
+// get renamed by reobfuscation, so official and SRG names agree in both dev and production. Color values
+// are swapped via getstatic Color.WHITE redirects (a Mekanism target with no Minecraft-class descriptor)
+// rather than @ModifyArg on putQuads/render, whose INVOKE descriptors contain SRG-renamed Minecraft types
+// that would otherwise require a refmap and fail against the production Mekanism jar.
 @Mixin(value = MekaSuitArmor.class, remap = false)
 public abstract class MekaSuitArmorTransparentLayerMixin {
 
@@ -32,25 +36,25 @@ public abstract class MekaSuitArmorTransparentLayerMixin {
     @Final
     private EquipmentSlot type;
 
-    @Inject(method = "renderArm", at = @At("HEAD"))
+    @Inject(method = "renderArm", at = @At("HEAD"), require = 0)
     private void strongermekasuit$captureArmContext(HumanoidModel<? extends LivingEntity> baseModel, PoseStack matrix, MultiBufferSource renderer,
           int light, int overlayLight, LivingEntity entity, ItemStack stack, boolean rightHand, CallbackInfo ci) {
-        ADVANCED_RENDER_CONTEXT.set(isAdvancedPiece(stack));
+        ADVANCED_RENDER_CONTEXT.set(StrongerMekaSuitItems.isAdvancedPiece(stack));
     }
 
-    @Inject(method = "render", at = @At("HEAD"))
+    @Inject(method = "render", at = @At("HEAD"), require = 0)
     private void strongermekasuit$captureRenderContext(HumanoidModel<? extends LivingEntity> baseModel, PoseStack matrix, MultiBufferSource renderer,
           int light, int overlayLight, float partialTicks, boolean hasEffect, LivingEntity entity, ItemStack stack, CallbackInfo ci) {
-        ADVANCED_RENDER_CONTEXT.set(isAdvancedPiece(stack));
+        ADVANCED_RENDER_CONTEXT.set(StrongerMekaSuitItems.isAdvancedPiece(stack));
     }
 
-    @Inject(method = "renderArm", at = @At("RETURN"))
+    @Inject(method = "renderArm", at = @At("RETURN"), require = 0)
     private void strongermekasuit$clearArmContext(HumanoidModel<? extends LivingEntity> baseModel, PoseStack matrix, MultiBufferSource renderer,
           int light, int overlayLight, LivingEntity entity, ItemStack stack, boolean rightHand, CallbackInfo ci) {
         ADVANCED_RENDER_CONTEXT.remove();
     }
 
-    @Inject(method = "render", at = @At("RETURN"))
+    @Inject(method = "render", at = @At("RETURN"), require = 0)
     private void strongermekasuit$clearRenderContext(HumanoidModel<? extends LivingEntity> baseModel, PoseStack matrix, MultiBufferSource renderer,
           int light, int overlayLight, float partialTicks, boolean hasEffect, LivingEntity entity, ItemStack stack, CallbackInfo ci) {
         ADVANCED_RENDER_CONTEXT.remove();
@@ -63,7 +67,8 @@ public abstract class MekaSuitArmorTransparentLayerMixin {
                 target = "Lmekanism/client/model/MekanismModelCache;MEKASUIT_MODULES:Ljava/util/Set;",
                 opcode = Opcodes.GETFIELD,
                 ordinal = 0
-          )
+          ),
+          require = 0
     )
     private Set<?> strongermekasuit$filterModuleModelsFirstPass(MekanismModelCache cache) {
         return filterModuleModels(cache.MEKASUIT_MODULES);
@@ -76,60 +81,60 @@ public abstract class MekaSuitArmorTransparentLayerMixin {
                 target = "Lmekanism/client/model/MekanismModelCache;MEKASUIT_MODULES:Ljava/util/Set;",
                 opcode = Opcodes.GETFIELD,
                 ordinal = 1
-          )
+          ),
+          require = 0
     )
     private Set<?> strongermekasuit$filterModuleModelsSecondPass(MekanismModelCache cache) {
         return filterModuleModels(cache.MEKASUIT_MODULES);
     }
 
-    @ModifyArg(
+    // The transparent pass of renderArm pulls its tint from getstatic Color.WHITE. Redirecting that
+    // single field read is equivalent to the old @ModifyArg on the second putQuads call,
+    // but stays remap-safe because the target references no Minecraft class. GETSTATIC redirects
+    // take no handler arguments, so the non-advanced path must return Color.WHITE directly.
+    @Redirect(
           method = "renderArm",
           at = @At(
-                value = "INVOKE",
-                target = "Lmekanism/client/render/armor/MekaSuitArmor;putQuads(Ljava/util/List;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lcom/mojang/blaze3d/vertex/PoseStack$Pose;IILmekanism/common/lib/Color;)V",
-                ordinal = 1
+                value = "FIELD",
+                target = "Lmekanism/common/lib/Color;WHITE:Lmekanism/common/lib/Color;",
+                opcode = Opcodes.GETSTATIC
           ),
-          index = 5
+          require = 0
     )
-    private Color strongermekasuit$modifyTransparentColorInArm(Color original) {
-        return ADVANCED_RENDER_CONTEXT.get() ? getPulsingPurple() : original;
+    private Color strongermekasuit$modifyTransparentColorInArm() {
+        return ADVANCED_RENDER_CONTEXT.get() ? getPulsingPurple() : Color.WHITE;
     }
 
-    @ModifyArg(
+    // Same idea for renderMekaSuit's second (transparent) pass, which reads Color.WHITE before
+    // invoking the private render overload.
+    @Redirect(
           method = "renderMekaSuit",
           at = @At(
-                value = "INVOKE",
-                target = "Lmekanism/client/render/armor/MekaSuitArmor;render(Lnet/minecraft/client/model/HumanoidModel;Lnet/minecraft/client/renderer/MultiBufferSource;Lcom/mojang/blaze3d/vertex/PoseStack;IILmekanism/common/lib/Color;ZLnet/minecraft/world/entity/LivingEntity;Ljava/util/Map;Z)V",
-                ordinal = 1
+                value = "FIELD",
+                target = "Lmekanism/common/lib/Color;WHITE:Lmekanism/common/lib/Color;",
+                opcode = Opcodes.GETSTATIC
           ),
-          index = 5
+          require = 0
     )
-    private Color strongermekasuit$modifyTransparentColorInArmor(Color original) {
-        return ADVANCED_RENDER_CONTEXT.get() ? getPulsingPurple() : original;
+    private Color strongermekasuit$modifyTransparentColorInArmor() {
+        return ADVANCED_RENDER_CONTEXT.get() ? getPulsingPurple() : Color.WHITE;
     }
 
-    @Inject(method = "renderArm", at = @At("RETURN"))
+    @Inject(method = "renderArm", at = @At("RETURN"), require = 0)
     private void strongermekasuit$renderAdvancedArmOverlay(HumanoidModel<? extends LivingEntity> baseModel, PoseStack matrix, MultiBufferSource renderer,
           int light, int overlayLight, LivingEntity entity, ItemStack stack, boolean rightHand, CallbackInfo ci) {
-        if (isAdvancedPiece(stack)) {
+        if (StrongerMekaSuitItems.isAdvancedPiece(stack)) {
             AdvancedMekaSuitModelOverlayRenderer.renderArmOverlay(baseModel, matrix, renderer, overlayLight, rightHand);
         }
     }
 
-    @Inject(method = "renderMekaSuit", at = @At("RETURN"))
+    @Inject(method = "renderMekaSuit", at = @At("RETURN"), require = 0)
     private void strongermekasuit$renderAdvancedOverlay(HumanoidModel<? extends LivingEntity> baseModel, PoseStack matrix, MultiBufferSource renderer,
           int light, int overlayLight, Color color, float partialTicks, boolean hasEffect, LivingEntity entity, CallbackInfo ci) {
         ItemStack worn = entity.getItemBySlot(type);
-        if (isAdvancedPiece(worn)) {
+        if (StrongerMekaSuitItems.isAdvancedPiece(worn)) {
             AdvancedMekaSuitModelOverlayRenderer.renderFrontOverlay(type, baseModel, matrix, renderer, entity, overlayLight);
         }
-    }
-
-    private static boolean isAdvancedPiece(ItemStack stack) {
-        return stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_HELMET.get())
-              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BODYARMOR.get())
-              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_PANTS.get())
-              || stack.is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BOOTS.get());
     }
 
     private static Set<?> filterModuleModels(Set<?> models) {
@@ -148,14 +153,15 @@ public abstract class MekaSuitArmorTransparentLayerMixin {
                 filtered.remove(model);
             }
         }
-        return filtered == null ? models : Set.copyOf(filtered);
+        return filtered == null ? models : java.util.Collections.unmodifiableSet(filtered);
     }
 
     private static boolean isAdvancedElytraOverrideModel(Object model) {
         if (!(model instanceof MekaSuitArmor.ModuleOBJModelData moduleModelData) || moduleModelData.getModel() == null) {
             return false;
         }
-        return moduleModelData.getModel().getRootComponentNames().stream().allMatch(name -> name.startsWith("override_elytra_"));
+        Set<String> rootNames = moduleModelData.getModel().getRootComponentNames();
+        return !rootNames.isEmpty() && rootNames.stream().allMatch(name -> name.startsWith("override_elytra_"));
     }
 
     private static Color getPulsingPurple() {

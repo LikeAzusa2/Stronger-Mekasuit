@@ -11,7 +11,6 @@ import mekanism.common.capabilities.energy.item.RateLimitEnergyHandler;
 import mekanism.common.capabilities.fluid.item.RateLimitMultiTankFluidHandler;
 import mekanism.common.capabilities.fluid.item.RateLimitMultiTankFluidHandler.FluidTankSpec;
 import mekanism.common.config.MekanismConfig;
-import mekanism.common.content.gear.mekasuit.ModuleJetpackUnit;
 import mekanism.common.content.gear.shared.ModuleEnergyUnit;
 import mekanism.common.item.gear.ItemMekaSuitArmor;
 import mekanism.common.registries.MekanismFluids;
@@ -78,10 +77,6 @@ public class AdvancedMekaSuitItem extends ItemMekaSuitArmor {
         return false;
     }
 
-    public float getBypassArmorAbsorption() {
-        return getOfficialAbsorption();
-    }
-
     public float getOfficialAbsorption() {
         return switch (getType()) {
             case HELMET, BOOTS -> 0.15F;
@@ -98,18 +93,16 @@ public class AdvancedMekaSuitItem extends ItemMekaSuitArmor {
 
     private FloatingLong getScaledEnergyCapacity(ItemStack stack) {
         IModule<ModuleEnergyUnit> module = IModuleHelper.INSTANCE.load(stack, MekanismModules.ENERGY_UNIT);
-        if (module == null) {
-            return FloatingLong.ZERO;
-        }
-        return module.getCustomInstance().getEnergyCapacity(module).multiply(BASE_ENERGY_CAPACITY_MULTIPLIER);
+        FloatingLong capacity = module == null ? MekanismConfig.gear.mekaSuitBaseEnergyCapacity.get()
+              : module.getCustomInstance().getEnergyCapacity(module);
+        return capacity.multiply(BASE_ENERGY_CAPACITY_MULTIPLIER);
     }
 
     private FloatingLong getScaledChargeRate(ItemStack stack) {
         IModule<ModuleEnergyUnit> module = IModuleHelper.INSTANCE.load(stack, MekanismModules.ENERGY_UNIT);
-        if (module == null) {
-            return FloatingLong.ZERO;
-        }
-        return module.getCustomInstance().getChargeRate(module).multiply(BASE_CHARGE_RATE_MULTIPLIER);
+        FloatingLong chargeRate = module == null ? MekanismConfig.gear.mekaSuitBaseChargeRate.get()
+              : module.getCustomInstance().getChargeRate(module);
+        return chargeRate.multiply(BASE_CHARGE_RATE_MULTIPLIER);
     }
 
     private int getScaledNutritionalCapacity() {
@@ -129,6 +122,7 @@ public class AdvancedMekaSuitItem extends ItemMekaSuitArmor {
     }
 
     private boolean hasNutritionalModule(ItemStack stack) {
+        // Vanilla MekaSuit exposes tanks whenever the module is installed, not only while it is toggled on.
         return IModuleHelper.INSTANCE.load(stack, MekanismModules.NUTRITIONAL_INJECTION_UNIT) != null;
     }
 

@@ -36,9 +36,9 @@ public abstract class ModuleChargeDistributionUnitMixin {
     @Shadow
     protected abstract FloatingLong charge(IModule<ModuleChargeDistributionUnit> module, Player player, ItemStack stack, FloatingLong amount);
 
-    @Inject(method = "tickServer", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "tickServer", at = @At("HEAD"), cancellable = true, require = 0)
     private void strongermekasuit$batchAdvancedChargeDistribution(IModule<ModuleChargeDistributionUnit> module, Player player, CallbackInfo ci) {
-        if (!module.getContainer().is(StrongerMekaSuitItems.ADVANCED_MEKASUIT_BODYARMOR.get())) {
+        if (!StrongerMekaSuitItems.isAdvancedBodyArmor(module.getContainer())) {
             return;
         }
         ci.cancel();

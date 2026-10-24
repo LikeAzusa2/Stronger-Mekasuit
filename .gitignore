@@ -10,6 +10,11 @@ build/
 run/
 
 ### Local Files ###
+docs/
+STATUS.md
+src/gametest/
+run-data/
+libs/
 *.log
 CHANGES-*.txt
 项目目录说明.txt

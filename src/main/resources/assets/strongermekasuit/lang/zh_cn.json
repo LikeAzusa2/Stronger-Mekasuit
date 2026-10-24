@@ -1,7 +1,7 @@
 {
-  "item.strongermekasuit.advanced_mekasuit_helmet": "进阶 MekaSuit 头盔",
-  "item.strongermekasuit.advanced_mekasuit_bodyarmor": "进阶 MekaSuit 胸甲",
-  "item.strongermekasuit.advanced_mekasuit_pants": "进阶 MekaSuit 护腿",
-  "item.strongermekasuit.advanced_mekasuit_boots": "进阶 MekaSuit 靴子",
-  "modmenu.descriptionTranslation.strongermekasuit": "加入更强属性、兼容 Mekanism 模块，并尽量沿用官方机制的进阶 MekaSuit。"
+  "item.strongermekasuit.advanced_mekasuit_helmet": "高级 MekaSuit 头盔",
+  "item.strongermekasuit.advanced_mekasuit_bodyarmor": "高级 MekaSuit 胸甲",
+  "item.strongermekasuit.advanced_mekasuit_pants": "高级 MekaSuit 护腿",
+  "item.strongermekasuit.advanced_mekasuit_boots": "高级 MekaSuit 靴子",
+  "modmenu.descriptionTranslation.strongermekasuit": "添加强化版 MekaSuit，兼容 Mekanism 模块并扩展伤害吸收能力。"
 }
